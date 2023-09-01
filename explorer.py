@@ -90,23 +90,30 @@ def ping_server(port):
         results.append([addr, port])
     return
 def Main():
+    compter = 0
     while True:
-        if threading.active_count() < num_threads:
-            thread = threading.Thread(target=ping_server, args=[25565])
-            thread.start()
-        for result in results:
-            #result = results[0]
-            addr = result[0]
-            port = result[1]
-            cursor.execute(f"SELECT * from servers WHERE addr='{addr}' AND port={port}")
-            data = cursor.fetchall()
-            if not data:
-                cursor.execute(f"INSERT INTO servers (addr, port, first_seen, last_seen) VALUES('{addr}',{port},'{datetime.now()}','{datetime.now()}')")
-                db.commit()
-            else :
-                cursor.execute(f"UPDATE servers SET last_seen = '{datetime.now()}' WHERE id = {data[0][0]}")
-                db.commit()
-            results.remove(result)
+        try : 
+            if threading.active_count() < num_threads:
+                thread = threading.Thread(target=ping_server, args=[25565])
+                thread.start()
+            for result in results:
+                compter += 1
+                addr = result[0]
+                port = result[1]
+                cursor.execute(f"SELECT * from servers WHERE addr='{addr}' AND port={port}")
+                data = cursor.fetchall()
+                if not data:
+                    cursor.execute(f"INSERT INTO servers (addr, port, first_seen, last_seen) VALUES('{addr}',{port},'{datetime.now()}','{datetime.now()}')")
+                    db.commit()
+                else :
+                    cursor.execute(f"UPDATE servers SET last_seen = '{datetime.now()}' WHERE id = {data[0][0]}")
+                    db.commit()
+                results.remove(result)
+        except:
+            break
+    print("\nTerminated.")
+    cursor.execute("SELECT * FROM servers")
+    print(f"{len(cursor.fetchall())} servers in database, {compter} added.")
             
 
 if __name__ == "__main__":
