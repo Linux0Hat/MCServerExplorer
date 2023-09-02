@@ -92,7 +92,7 @@ def ping_server(addr, port):
     description = description.replace("§o","")
     description = description.replace("§r",colorama.Style.RESET_ALL)
     
-    print(f"{colorama.Fore.RED}{players:10}{colorama.Fore.BLUE}{ip:22}{colorama.Fore.LIGHTYELLOW_EX}{version:30}{colorama.Fore.LIGHTGREEN_EX}{latency:6}{colorama.Style.RESET_ALL}{description}")
+    print(f"{colorama.Fore.LIGHTRED_EX}{players:10}{colorama.Fore.LIGHTBLUE_EX}{ip:22}{colorama.Fore.LIGHTYELLOW_EX}{version:30}{colorama.Fore.LIGHTGREEN_EX}{latency:6}{colorama.Style.RESET_ALL}{description}{colorama.Style.RESET_ALL}")
     return
 
 def Main():
