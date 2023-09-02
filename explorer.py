@@ -12,11 +12,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--threads', type=int, help='Threads (default = 400)')
 parser.add_argument('--timeout', type=int, help='Timeout (ms, default = 100)')
 parser.add_argument('--datafile', type=str, help='Datafile (default = database.db)')
+parser.add_argument('--port', type=int, help='Port (default = 25565)')
 args = parser.parse_args()
 
 num_threads = args.threads
 timeout = args.timeout
 datafile = args.datafile
+port_ = args.port
 
 if not num_threads:
     num_threads = 400
@@ -26,6 +28,9 @@ if not timeout:
 
 if not datafile:
     datafile = "database.db"
+
+if not port_ :
+    port_ = 25565
 
 results = []
 
@@ -89,12 +94,13 @@ def ping_server(port):
 
         results.append([addr, port])
     return
+    
 def Main():
     compter = 0
     while True:
         try : 
             if threading.active_count() < num_threads:
-                thread = threading.Thread(target=ping_server, args=[25565])
+                thread = threading.Thread(target=ping_server, args=[port_])
                 thread.start()
             for result in results:
                 compter += 1
