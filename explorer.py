@@ -38,15 +38,19 @@ db = sqlite3.connect(datafile)
 cursor = db.cursor()
 colorama.init()
 
+stop_threads = 0
+
 cursor.execute('''CREATE TABLE IF NOT EXISTS "servers" ( id INTEGER PRIMARY KEY AUTOINCREMENT, addr TEXT, port INTEGER, first_seen DATETIME, last_seen DATETIME);''')
 db.commit()
 
 def ping_server(port):
     while True :
+        if stop_threads :
+            return
         addr = socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff)))
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(timeout/1000)  # Temps d'attente en secondes
+                s.settimeout(timeout/1000)
                 s.connect((addr, port))
         except Exception as e:
             continue
@@ -90,40 +94,40 @@ def ping_server(port):
             description = description.replace("§n","\e[4m")
             description = description.replace("§o","")
             description = description.replace("§r",colorama.Style.RESET_ALL)
-            
+
             print(f"{colorama.Fore.LIGHTRED_EX}{players:10}{colorama.Fore.LIGHTBLUE_EX}{ip:22}{colorama.Fore.LIGHTYELLOW_EX}{version:30}{colorama.Fore.LIGHTGREEN_EX}{latency:6}{colorama.Style.RESET_ALL}{description}{colorama.Style.RESET_ALL}")
 
             results.append([addr, port])
     
 def Main():
-    compter = 0
-    threads = []
-    for i in range(0,num_threads):
-        thread = threading.Thread(target=ping_server, args=[port_])
-        thread.start()
-    while True:
-        try : 
+    try :
+        compter = [0,0]
+        threads = []
+        for i in range(0,num_threads):
+            thread = threading.Thread(target=ping_server, args=[port_])
+            threads.append(thread)
+            thread.start() 
+        while True:
             for result in results:
-                compter += 1
                 addr = result[0]
                 port = result[1]
                 cursor.execute(f"SELECT * from servers WHERE addr='{addr}' AND port={port}")
                 data = cursor.fetchall()
                 if not data:
+                    compter[0] += 1
                     cursor.execute(f"INSERT INTO servers (addr, port, first_seen, last_seen) VALUES('{addr}',{port},'{datetime.now()}','{datetime.now()}')")
                     db.commit()
                 else :
+                    compter[1] += 1
                     cursor.execute(f"UPDATE servers SET last_seen = '{datetime.now()}' WHERE id = {data[0][0]}")
                     db.commit()
                 results.remove(result)
-        except:
-            break
-    db.commit()
-    for thread in threads:
-        thread.kill()
+    except:
+        stop_threads = 1
     print("\nTerminated.")
     cursor.execute("SELECT * FROM servers")
-    print(f"{len(cursor.fetchall())} servers in database, {compter} added.")
+    print(f"{len(cursor.fetchall())} servers in database, {compter[0]} added, {compter[1]} updated.")
+    return
             
 
 if __name__ == "__main__":
