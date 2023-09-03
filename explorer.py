@@ -34,8 +34,6 @@ if not port_ :
 
 results = []
 
-test = 0
-
 db = sqlite3.connect(datafile)
 cursor = db.cursor()
 colorama.init()
@@ -45,8 +43,6 @@ db.commit()
 
 def ping_server(port):
     while True :
-        test += 1
-        print(test)
         addr = socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff)))
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
