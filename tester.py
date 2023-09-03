@@ -30,10 +30,12 @@ num_threads = args.threads
 if not num_threads:
     num_threads = 300
 
+stop_threads = 0
+
 def ping_server():
     while True: 
-        if not database:
-            break
+        if not database or stop_threads:
+            return 
         server = database.pop(0)
         addr = server[1]
         port = server[2]
@@ -116,8 +118,7 @@ def Main():
         while True:
             pass
     except:
-        for thread in threads:
-            thread.kill()
+        stop_threads = 1
         print("Complete")
 
 if __name__ == "__main__":
