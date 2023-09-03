@@ -23,88 +23,102 @@ parser.add_argument('--maxplayers', type=int, help='Maximum of players connected
 parser.add_argument('--timeout', type=int, help='Timout (ms)')
 parser.add_argument('--capacity', type=int, help="Server's player capacity")
 parser.add_argument('--version', type=str, help="Server's version")
+parser.add_argument('--threads', type=str, help="Threads (default = 300)")
 args = parser.parse_args()
 
-def ping_server(addr, port):
-    server = JavaServer.lookup(f"{addr}:{port}")
-    try:
-        status = server.status()
-    except:
-        return
-        
-    if not status:
-        return
-    minplayers = args.minplayers
-    players = args.players
-    maxplayers = args.maxplayers
-    timeout = args.timeout
-    capacity = args.capacity
-    version = args.version
+num_threads = args.threads
+if not num_threads:
+    num_threads = 300
 
-    if minplayers and minplayers>=status.players.online:
-        return
-    if players and players!=status.players.online:
-        return
-    if maxplayers and maxplayers<=status.players.online:
-        return
-    if timeout:
-        if timeout <= status.latency:
-            return
-    else:
-        if 100 <= status.latency:
-            return
-    if capacity and capacity != status.players.max:
-        return
-    if version and not version in str(status.version.name):
-        return
+def ping_server():
+    while True: 
+        if not database:
+            break
+        server = database.pop(0)
+        addr = server[1]
+        port = server[2]
+        server = JavaServer.lookup(f"{addr}:{port}")
+        try:
+            status = server.status()
+        except:
+            continue
             
-    players = f"{status.players.online}/{status.players.max}"
-    
-    ip = f"{addr}:{port}"
-    
-    version=str(status.version.name)
-    if len(version) > 27:
-        version = f"{version[:27-3]}..."
-    
-    latency = str(int(status.latency))+"ms"
+        if not status:
+            continue
+        minplayers = args.minplayers
+        players = args.players
+        maxplayers = args.maxplayers
+        timeout = args.timeout
+        capacity = args.capacity
+        version = args.version
 
-    description = status.description
-    description = description.replace("§1",colorama.Fore.BLUE)
-    description = description.replace("§2",colorama.Fore.GREEN)
-    description = description.replace("§3",colorama.Fore.CYAN)
-    description = description.replace("§4",colorama.Fore.RED)
-    description = description.replace("§5",colorama.Fore.MAGENTA)
-    description = description.replace("§6",colorama.Fore.YELLOW)
-    description = description.replace("§7",colorama.Fore.LIGHTBLACK_EX)
-    description = description.replace("§8",colorama.Fore.LIGHTBLACK_EX)
-    description = description.replace("§9",colorama.Fore.LIGHTBLUE_EX)
-    description = description.replace("§a",colorama.Fore.LIGHTGREEN_EX)
-    description = description.replace("§b",colorama.Fore.LIGHTCYAN_EX)
-    description = description.replace("§c",colorama.Fore.LIGHTRED_EX)
-    description = description.replace("§d",colorama.Fore.LIGHTMAGENTA_EX)
-    description = description.replace("§e",colorama.Fore.LIGHTYELLOW_EX)
-    description = description.replace("§f",colorama.Fore.WHITE)
-    description = description.replace("\n"," - ")
-    description = description.replace("§k","")
-    description = description.replace("§l",colorama.Style.BRIGHT)
-    description = description.replace("§m","")
-    description = description.replace("§n","\e[4m")
-    description = description.replace("§o","")
-    description = description.replace("§r",colorama.Style.RESET_ALL)
-    
-    print(f"{colorama.Fore.LIGHTRED_EX}{players:10}{colorama.Fore.LIGHTBLUE_EX}{ip:22}{colorama.Fore.LIGHTYELLOW_EX}{version:30}{colorama.Fore.LIGHTGREEN_EX}{latency:6}{colorama.Style.RESET_ALL}{description}{colorama.Style.RESET_ALL}")
-    return
+        if minplayers and minplayers>=status.players.online:
+            continue
+        if players and players!=status.players.online:
+            continue
+        if maxplayers and maxplayers<=status.players.online:
+            continue
+        if timeout:
+            if timeout <= status.latency:
+                continue
+        else:
+            if 100 <= status.latency:
+                continue
+        if capacity and capacity != status.players.max:
+            continue
+        if version and not version in str(status.version.name):
+            continue
+                
+        players = f"{status.players.online}/{status.players.max}"
+        
+        ip = f"{addr}:{port}"
+        
+        version=str(status.version.name)
+        if len(version) > 27:
+            version = f"{version[:27-3]}..."
+        
+        latency = str(int(status.latency))+"ms"
+
+        description = status.description
+        description = description.replace("§1",colorama.Fore.BLUE)
+        description = description.replace("§2",colorama.Fore.GREEN)
+        description = description.replace("§3",colorama.Fore.CYAN)
+        description = description.replace("§4",colorama.Fore.RED)
+        description = description.replace("§5",colorama.Fore.MAGENTA)
+        description = description.replace("§6",colorama.Fore.YELLOW)
+        description = description.replace("§7",colorama.Fore.LIGHTBLACK_EX)
+        description = description.replace("§8",colorama.Fore.LIGHTBLACK_EX)
+        description = description.replace("§9",colorama.Fore.LIGHTBLUE_EX)
+        description = description.replace("§a",colorama.Fore.LIGHTGREEN_EX)
+        description = description.replace("§b",colorama.Fore.LIGHTCYAN_EX)
+        description = description.replace("§c",colorama.Fore.LIGHTRED_EX)
+        description = description.replace("§d",colorama.Fore.LIGHTMAGENTA_EX)
+        description = description.replace("§e",colorama.Fore.LIGHTYELLOW_EX)
+        description = description.replace("§f",colorama.Fore.WHITE)
+        description = description.replace("\n"," - ")
+        description = description.replace("§k","")
+        description = description.replace("§l",colorama.Style.BRIGHT)
+        description = description.replace("§m","")
+        description = description.replace("§n","\e[4m")
+        description = description.replace("§o","")
+        description = description.replace("§r",colorama.Style.RESET_ALL)
+        
+        print(f"{colorama.Fore.LIGHTRED_EX}{players:10}{colorama.Fore.LIGHTBLUE_EX}{ip:22}{colorama.Fore.LIGHTYELLOW_EX}{version:30}{colorama.Fore.LIGHTGREEN_EX}{latency:6}{colorama.Style.RESET_ALL}{description}{colorama.Style.RESET_ALL}")
+
 
 def Main():
-    threads = []
-    for server in database:
-        thread = threading.Thread(target=ping_server, args=[server[1], server[2]])
-        threads.append(thread)
-        thread.start()
-
-    for thread in threads:
-        thread.join()
-    print("Complete")
+    try:
+        threads = []
+        for i in range(0, num_threads):
+            thread = threading.Thread(target=ping_server, args=[])
+            threads.append(thread)
+            thread.start()
+        while True:
+            pass
+    except:
+        for thread in threads:
+            thread.kill()
+        print("Complete")
 
 if __name__ == "__main__":
     Main()
