@@ -4,6 +4,8 @@ from mcstatus import JavaServer
 import colorama
 import argparse
 import random
+from datetime import datetime
+import sys
 
 db = sqlite3.connect("database.db")
 cursor = db.cursor()
@@ -26,17 +28,32 @@ parser.add_argument('--version', type=str, help="Server's version")
 parser.add_argument('--threads', type=str, help="Threads (default = 300)")
 args = parser.parse_args()
 
+minplayers = args.minplayers
+players = args.players
+maxplayers = args.maxplayers
+timeout = args.timeout
+capacity = args.capacity
+version = args.version
+
 num_threads = args.threads
 if not num_threads:
     num_threads = 300
 
-stop_threads = 0
+event = threading.Event()
+results = []
 
 def ping_server():
+    minplayers = args.minplayers
+    players = args.players
+    maxplayers = args.maxplayers
+    timeout = args.timeout
+    capacity = args.capacity
+    version = args.version
     while True: 
-        if not database or stop_threads:
-            return 
+        if not database or event.is_set():
+            break
         server = database.pop(0)
+        id = server[0]
         addr = server[1]
         port = server[2]
         server = JavaServer.lookup(f"{addr}:{port}")
@@ -44,15 +61,9 @@ def ping_server():
             status = server.status()
         except:
             continue
-            
+        
         if not status:
             continue
-        minplayers = args.minplayers
-        players = args.players
-        maxplayers = args.maxplayers
-        timeout = args.timeout
-        capacity = args.capacity
-        version = args.version
 
         if minplayers and minplayers>=status.players.online:
             continue
@@ -105,7 +116,10 @@ def ping_server():
         description = description.replace("§o","")
         description = description.replace("§r",colorama.Style.RESET_ALL)
         
-        print(f"{colorama.Fore.LIGHTRED_EX}{players:10}{colorama.Fore.LIGHTBLUE_EX}{ip:22}{colorama.Fore.LIGHTYELLOW_EX}{version:30}{colorama.Fore.LIGHTGREEN_EX}{latency:6}{colorama.Style.RESET_ALL}{description}{colorama.Style.RESET_ALL}")
+        if event.is_set():
+            break
+
+        results.append([f"{colorama.Fore.LIGHTRED_EX}{players:10}{colorama.Fore.LIGHTBLUE_EX}{ip:22}{colorama.Fore.LIGHTYELLOW_EX}{version:30}{colorama.Fore.LIGHTGREEN_EX}{latency:6}{colorama.Style.RESET_ALL}{description}{colorama.Style.RESET_ALL}", id])
 
 
 def Main():
@@ -115,11 +129,18 @@ def Main():
             thread = threading.Thread(target=ping_server, args=[])
             threads.append(thread)
             thread.start()
-        while True:
-            pass
+        while threading.active_count() != 1:
+            for result in results:
+                print(result[0])
+                cursor.execute(f"UPDATE servers SET last_seen = '{datetime.now()}' WHERE id = {result[1]}")
+                db.commit()
     except:
-        stop_threads = 1
-        print("Complete")
+        event.set()
+        print("\nStopping...")
+    while threading.active_count() != 1:
+        pass
+    print("Complete")
+    sys.exit()
 
 if __name__ == "__main__":
     Main()

@@ -7,6 +7,7 @@ import socket
 import struct
 from datetime import datetime
 import argparse
+import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--threads', type=int, help='Threads (default = 300)')
@@ -38,29 +39,30 @@ db = sqlite3.connect(datafile)
 cursor = db.cursor()
 colorama.init()
 
-stop_threads = 0
+event = threading.Event()
 
 cursor.execute('''CREATE TABLE IF NOT EXISTS "servers" ( id INTEGER PRIMARY KEY AUTOINCREMENT, addr TEXT, port INTEGER, first_seen DATETIME, last_seen DATETIME);''')
 db.commit()
 
 def ping_server(port):
     while True :
-        if stop_threads :
-            return
+        if event.is_set() :
+            break
         addr = socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff)))
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(timeout/1000)
                 s.connect((addr, port))
-        except Exception as e:
+        except :
             continue
-
-        server = JavaServer.lookup(f"{addr}:{port}")
+        
         try:
+            server = JavaServer.lookup(f"{addr}:{port}")
             status = server.status()
         except:
             continue
-        if  status:
+
+        if status:
             players = f"{status.players.online}/{status.players.max}"
             
             ip = f"{addr}:{port}"
@@ -95,9 +97,7 @@ def ping_server(port):
             description = description.replace("§o","")
             description = description.replace("§r",colorama.Style.RESET_ALL)
 
-            print(f"{colorama.Fore.LIGHTRED_EX}{players:10}{colorama.Fore.LIGHTBLUE_EX}{ip:22}{colorama.Fore.LIGHTYELLOW_EX}{version:30}{colorama.Fore.LIGHTGREEN_EX}{latency:6}{colorama.Style.RESET_ALL}{description}{colorama.Style.RESET_ALL}")
-
-            results.append([addr, port])
+            results.append([addr, port, f"{colorama.Fore.LIGHTRED_EX}{players:10}{colorama.Fore.LIGHTBLUE_EX}{ip:22}{colorama.Fore.LIGHTYELLOW_EX}{version:30}{colorama.Fore.LIGHTGREEN_EX}{latency:6}{colorama.Style.RESET_ALL}{description}{colorama.Style.RESET_ALL}"])
     
 def Main():
     try :
@@ -109,6 +109,7 @@ def Main():
             thread.start() 
         while True:
             for result in results:
+                print(result[2])
                 addr = result[0]
                 port = result[1]
                 cursor.execute(f"SELECT * from servers WHERE addr='{addr}' AND port={port}")
@@ -123,11 +124,14 @@ def Main():
                     db.commit()
                 results.remove(result)
     except:
-        stop_threads = 1
+        event.set()
+        print("\nStopping...")
+    while threading.active_count() != 1:
+        pass
     print("\nTerminated.")
     cursor.execute("SELECT * FROM servers")
     print(f"{len(cursor.fetchall())} servers in database, {compter[0]} added, {compter[1]} updated.")
-    return
+    sys.exit()
             
 
 if __name__ == "__main__":
